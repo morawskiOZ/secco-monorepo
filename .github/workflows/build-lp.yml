@@ -4,8 +4,8 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Semver version (e.g. 1.0.0, 0.2.1)"
-        required: true
+        description: "Explicit semver (optional). Blank = auto patch-bump from last lp-v*.*.* tag."
+        required: false
         type: string
       snapshot_timestamp:
         description: "Content snapshot timestamp (optional, defaults to latest)"
@@ -24,22 +24,36 @@ jobs:
       packages: write
 
     steps:
-      - name: Validate semver
-        run: |
-          VERSION="${{ inputs.version }}"
-          if ! echo "$VERSION" | grep -qE '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$'; then
-            echo "::error::Invalid semver: $VERSION"
-            exit 1
-          fi
-
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      - name: Resolve version
+        id: ver
+        run: |
+          if [ -n "${{ inputs.version }}" ]; then
+            VERSION="${{ inputs.version }}"
+            if ! echo "$VERSION" | grep -qE '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$'; then
+              echo "::error::Invalid semver: $VERSION"
+              exit 1
+            fi
+          else
+            git fetch --tags --quiet
+            LAST=$(git tag -l 'lp-v*' | grep -E '^lp-v[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,4}$' | sort -V | tail -1)
+            if [ -z "$LAST" ]; then
+              VERSION="0.0.1"
+            else
+              IFS=. read -r MAJ MIN PAT <<< "${LAST#lp-v}"
+              VERSION="$MAJ.$MIN.$((PAT+1))"
+            fi
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Resolved version: $VERSION"
+
       - name: Check tag not taken
         run: |
-          TAG="lp-v${{ inputs.version }}"
+          TAG="lp-v${{ steps.ver.outputs.version }}"
           if git rev-parse "$TAG" >/dev/null 2>&1; then
             echo "::error::Tag $TAG already exists"
             exit 1
@@ -94,7 +108,7 @@ jobs:
       - name: Build and push
         env:
           GITHUB_REPO: ${{ github.repository }}/secco-lp
-          TAG: ${{ inputs.version }}
+          TAG: ${{ steps.ver.outputs.version }}
           PUBLIC_TURNSTILE_SITE_KEY: ${{ secrets.PUBLIC_TURNSTILE_SITE_KEY }}
         working-directory: secco_LP
         run: task build-push
@@ -103,5 +117,5 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag -a "lp-v${{ inputs.version }}" -m "LP release v${{ inputs.version }}"
-          git push origin "lp-v${{ inputs.version }}"
+          git tag -a "lp-v${{ steps.ver.outputs.version }}" -m "LP release v${{ steps.ver.outputs.version }}"
+          git push origin "lp-v${{ steps.ver.outputs.version }}"

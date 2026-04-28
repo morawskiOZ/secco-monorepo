@@ -176,12 +176,9 @@ func handleDeploy(db *sql.DB, store objectStore, cfg config) http.HandlerFunc {
 func triggerGitHubWorkflow(cfg config, timestamp string) (string, error) {
 	url := fmt.Sprintf("https://api.github.com/repos/%s/actions/workflows/%s/dispatches", cfg.githubRepo, cfg.githubWorkflowID)
 
-	version := fmt.Sprintf("0.0.%d", time.Now().Unix())
-
 	payload := map[string]interface{}{
 		"ref": "main",
 		"inputs": map[string]string{
-			"version":            version,
 			"snapshot_timestamp": timestamp,
 		},
 	}
