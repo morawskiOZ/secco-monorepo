@@ -1,0 +1,60 @@
+version: "3"
+
+vars:
+  REGISTRY: ghcr.io
+  # Set via env or override: task build GITHUB_REPO=owner/repo
+  GITHUB_REPO: '{{.GITHUB_REPO | default ""}}'
+  GITHUB_REPO_LOWER:
+    sh: echo "{{.GITHUB_REPO}}" | tr '[:upper:]' '[:lower:]'
+  IMAGE_NAME: "{{.REGISTRY}}/{{.GITHUB_REPO_LOWER}}"
+  # Default tag: git short SHA, overridable
+  GIT_SHA:
+    sh: git rev-parse --short HEAD 2>/dev/null || echo "dev"
+  TAG: '{{.TAG | default .GIT_SHA}}'
+
+tasks:
+  build:
+    desc: Build Docker image
+    requires:
+      vars: [GITHUB_REPO]
+    cmds:
+      - docker build
+          --build-arg PUBLIC_TURNSTILE_SITE_KEY=${PUBLIC_TURNSTILE_SITE_KEY}
+          -t {{.IMAGE_NAME}}:{{.TAG}}
+          -t {{.IMAGE_NAME}}:latest
+          .
+    sources:
+      - Dockerfile
+      - backend/**/*.go
+      - backend/go.mod
+      - src/**/*
+      - static/**/*
+      - package.json
+      - package-lock.json
+      - svelte.config.js
+      - vite.config.ts
+      - tsconfig.json
+
+  push:
+    desc: Push Docker image to GHCR
+    requires:
+      vars: [GITHUB_REPO]
+    cmds:
+      - docker push {{.IMAGE_NAME}}:{{.TAG}}
+      - docker push {{.IMAGE_NAME}}:latest
+
+  build-push:
+    desc: Build and push Docker image
+    cmds:
+      - task: build
+      - task: push
+
+  dev:
+    desc: Run development environment
+    cmds:
+      - docker compose up --build
+
+  login:
+    desc: Login to GHCR (requires GITHUB_TOKEN env var)
+    cmds:
+      - echo $GITHUB_TOKEN | docker login {{.REGISTRY}} -u $GITHUB_ACTOR --password-stdin

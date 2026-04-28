@@ -1,0 +1,15 @@
+node_modules
+.svelte-kit
+.git
+.github
+.env
+.env.*
+!.env.example
+backend/secco-studio
+*.md
+!CLAUDE.md
+.playwright-mcp/
+.DS_Store
+Thumbs.db
+docker-compose.yml
+Taskfile.yml

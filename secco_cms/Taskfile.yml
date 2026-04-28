@@ -1,0 +1,65 @@
+version: "3"
+
+vars:
+  REGISTRY: ghcr.io
+  GITHUB_REPO: '{{.GITHUB_REPO | default ""}}'
+  GITHUB_REPO_LOWER:
+    sh: echo "{{.GITHUB_REPO}}" | tr '[:upper:]' '[:lower:]'
+  IMAGE_NAME: "{{.REGISTRY}}/{{.GITHUB_REPO_LOWER}}"
+  GIT_SHA:
+    sh: git rev-parse --short HEAD 2>/dev/null || echo "dev"
+  TAG: '{{.TAG | default .GIT_SHA}}'
+
+tasks:
+  prepare:
+    desc: Copy @secco/render tarball into build context
+    cmds:
+      - cp ../secco_renderer/secco-render-1.0.0.tgz ./secco-render-1.0.0.tgz
+    sources:
+      - ../secco_renderer/secco-render-1.0.0.tgz
+
+  build:
+    desc: Build Docker image
+    requires:
+      vars: [GITHUB_REPO]
+    deps: [prepare]
+    cmds:
+      - docker build
+          -t {{.IMAGE_NAME}}:{{.TAG}}
+          -t {{.IMAGE_NAME}}:latest
+          .
+    sources:
+      - Dockerfile
+      - backend/**/*.go
+      - backend/go.mod
+      - backend/go.sum
+      - src/**/*
+      - package.json
+      - package-lock.json
+      - svelte.config.js
+      - vite.config.ts
+      - tsconfig.json
+
+  push:
+    desc: Push Docker image to GHCR
+    requires:
+      vars: [GITHUB_REPO]
+    cmds:
+      - docker push {{.IMAGE_NAME}}:{{.TAG}}
+      - docker push {{.IMAGE_NAME}}:latest
+
+  build-push:
+    desc: Build and push Docker image
+    cmds:
+      - task: build
+      - task: push
+
+  dev:
+    desc: Run development environment
+    cmds:
+      - docker compose up --build
+
+  login:
+    desc: Login to GHCR (requires GITHUB_TOKEN env var)
+    cmds:
+      - echo $GITHUB_TOKEN | docker login {{.REGISTRY}} -u $GITHUB_ACTOR --password-stdin

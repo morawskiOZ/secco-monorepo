@@ -1,0 +1,35 @@
+services:
+  frontend:
+    image: node:24-alpine
+    working_dir: /app
+    volumes:
+      - ./:/app
+      - node_modules:/app/node_modules
+      - ../secco_renderer/secco-render-1.0.0.tgz:/app/secco-render-1.0.0.tgz:ro
+    ports:
+      - "${FRONTEND_PORT:-5175}:5173"
+    environment:
+      - API_URL=http://backend:${PORT:-8081}
+    command: >
+      sh -c "cp package.json package.json.bak
+      && sed -i 's|file:../secco_renderer/secco-render-1.0.0.tgz|file:./secco-render-1.0.0.tgz|' package.json
+      && npm install
+      && mv package.json.bak package.json
+      && npm run dev -- --host 0.0.0.0"
+    depends_on:
+      - backend
+
+  backend:
+    image: golang:1.25-alpine
+    working_dir: /app
+    volumes:
+      - ./backend:/app
+      - cms-data:/app/data
+    ports:
+      - "${PORT:-8081}:${PORT:-8081}"
+    env_file: .env
+    command: sh -c "mkdir -p build && touch build/.gitkeep && go run ."
+
+volumes:
+  node_modules:
+  cms-data:

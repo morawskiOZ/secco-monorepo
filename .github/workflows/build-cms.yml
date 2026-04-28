@@ -1,0 +1,80 @@
+name: Build and Push CMS Image
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Semver version (e.g. 1.0.0, 0.2.1)"
+        required: true
+        type: string
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+      - name: Validate semver
+        run: |
+          VERSION="${{ inputs.version }}"
+          if ! echo "$VERSION" | grep -qE '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$'; then
+            echo "::error::Invalid semver: $VERSION"
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check tag not taken
+        run: |
+          TAG="cms-v${{ inputs.version }}"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "::error::Tag $TAG already exists"
+            exit 1
+          fi
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Build renderer tarball
+        working-directory: secco_renderer
+        run: |
+          npm ci
+          npm pack
+          mv secco-render-*.tgz ../secco_cms/secco-render-1.0.0.tgz
+
+      - name: Install Task
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+
+      - name: Login to GHCR
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
+        working-directory: secco_cms
+        run: task login
+
+      - name: Build and push
+        env:
+          GITHUB_REPO: ${{ github.repository }}/secco-cms
+          TAG: ${{ inputs.version }}
+        working-directory: secco_cms
+        run: task build-push
+
+      - name: Create git tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "cms-v${{ inputs.version }}" -m "CMS release v${{ inputs.version }}"
+          git push origin "cms-v${{ inputs.version }}"

@@ -1,0 +1,27 @@
+services:
+  frontend:
+    image: node:24-alpine
+    working_dir: /app
+    volumes:
+      - ./:/app
+      - node_modules:/app/node_modules
+    ports:
+      - "${FRONTEND_PORT:-5174}:5173"
+    environment:
+      - API_URL=http://backend:${PORT:-8080}
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    depends_on:
+      - backend
+
+  backend:
+    image: golang:1.23-alpine
+    working_dir: /app
+    volumes:
+      - ./backend:/app
+    ports:
+      - "${PORT:-8080}:${PORT:-8080}"
+    env_file: .env
+    command: sh -c "mkdir -p build && touch build/.gitkeep && go run ."
+
+volumes:
+  node_modules:

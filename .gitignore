@@ -1,0 +1,43 @@
+# Node
+node_modules/
+
+# SvelteKit
+.svelte-kit/
+**/build/
+.output
+
+# Vite
+**/vite.config.js.timestamp-*
+**/vite.config.ts.timestamp-*
+
+# Env
+.env
+.env.*
+!.env.example
+!.env.test
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Go binaries
+secco_LP/backend/secco-studio
+secco_cms/backend/secco-cms
+
+# Renderer build artifacts
+secco_renderer/dist/
+*.tgz
+
+# CMS data
+secco_cms/data/
+
+# Task
+.task/
+
+# Playwright
+.playwright-mcp/
+
+# Misc
+.vercel
+.netlify
+.wrangler

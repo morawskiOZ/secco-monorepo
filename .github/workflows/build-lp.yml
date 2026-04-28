@@ -1,0 +1,107 @@
+name: Build and Push LP Image
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Semver version (e.g. 1.0.0, 0.2.1)"
+        required: true
+        type: string
+      snapshot_timestamp:
+        description: "Content snapshot timestamp (optional, defaults to latest)"
+        required: false
+        type: string
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+      - name: Validate semver
+        run: |
+          VERSION="${{ inputs.version }}"
+          if ! echo "$VERSION" | grep -qE '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$'; then
+            echo "::error::Invalid semver: $VERSION"
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check tag not taken
+        run: |
+          TAG="lp-v${{ inputs.version }}"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "::error::Tag $TAG already exists"
+            exit 1
+          fi
+
+      - name: Download content snapshot from R2
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+        working-directory: secco_LP
+        run: |
+          SNAPSHOT_KEY="snapshots/latest.json"
+          if [ -n "${{ inputs.snapshot_timestamp }}" ]; then
+            SNAPSHOT_KEY="snapshots/${{ inputs.snapshot_timestamp }}.json"
+          fi
+
+          aws s3 cp "s3://${{ secrets.R2_BUCKET_NAME }}/${SNAPSHOT_KEY}" \
+            ./content-snapshot.json \
+            --endpoint-url "https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com" \
+            2>/dev/null || true
+
+          if [ -f content-snapshot.json ]; then
+            node -e "
+              const snapshot = require('./content-snapshot.json');
+              const fs = require('fs');
+              fs.mkdirSync('src/lib/content', { recursive: true });
+              fs.writeFileSync('src/lib/content/articles.json', JSON.stringify(snapshot.articles || []));
+              fs.writeFileSync('src/lib/content/projects.json', JSON.stringify(snapshot.projects || []));
+              fs.writeFileSync('src/lib/content/process.json', JSON.stringify(snapshot.process || null));
+            "
+            echo "Content snapshot loaded successfully"
+          else
+            echo "No content snapshot found, using empty defaults"
+            mkdir -p src/lib/content
+            echo '[]' > src/lib/content/articles.json
+            echo '[]' > src/lib/content/projects.json
+            echo 'null' > src/lib/content/process.json
+          fi
+
+      - name: Install Task
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+
+      - name: Login to GHCR
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
+        working-directory: secco_LP
+        run: task login
+
+      - name: Build and push
+        env:
+          GITHUB_REPO: ${{ github.repository }}/secco-lp
+          TAG: ${{ inputs.version }}
+          PUBLIC_TURNSTILE_SITE_KEY: ${{ secrets.PUBLIC_TURNSTILE_SITE_KEY }}
+        working-directory: secco_LP
+        run: task build-push
+
+      - name: Create git tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "lp-v${{ inputs.version }}" -m "LP release v${{ inputs.version }}"
+          git push origin "lp-v${{ inputs.version }}"
