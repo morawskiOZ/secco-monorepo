@@ -1,0 +1,51 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	// Production: `wrangler deploy`               -> www.seccostudio.com + seccostudio.com
+	// Staging:    `wrangler deploy --env staging` -> secco-studio-staging.<account>.workers.dev
+	"name": "secco-studio",
+	"main": "worker/src/index.ts",
+	"compatibility_date": "2026-11-01",
+	"workers_dev": false,
+	"preview_urls": false,
+	"assets": {
+		"directory": "./build",
+		"binding": "ASSETS",
+		// The Worker runs first so the apex host can redirect to www; files are
+		// then served through the ASSETS binding.
+		"run_worker_first": true
+	},
+	"routes": [
+		{ "pattern": "www.seccostudio.com", "custom_domain": true },
+		{ "pattern": "seccostudio.com", "custom_domain": true }
+	],
+	// Secrets (set with `wrangler secret put`): SMTP_PASS, TURNSTILE_SECRET_KEY
+	"vars": {
+		"SMTP_HOST": "smtp.gmail.com",
+		"SMTP_PORT": "587",
+		"SMTP_USER": "secco.studio@gmail.com",
+		"RECIPIENT_EMAIL": "secco.studio@gmail.com",
+		"CANONICAL_HOST": "www.seccostudio.com"
+	},
+	"durable_objects": {
+		"bindings": [{ "name": "RATE_LIMITER", "class_name": "RateLimiter" }]
+	},
+	"migrations": [{ "tag": "v1", "new_sqlite_classes": ["RateLimiter"] }],
+	"observability": { "enabled": true },
+	"env": {
+		"staging": {
+			"name": "secco-studio-staging",
+			"workers_dev": true,
+			"routes": [],
+			"vars": {
+				"SMTP_HOST": "smtp.gmail.com",
+				"SMTP_PORT": "587",
+				"SMTP_USER": "secco.studio@gmail.com",
+				"RECIPIENT_EMAIL": "secco.studio@gmail.com"
+			},
+			"durable_objects": {
+				"bindings": [{ "name": "RATE_LIMITER", "class_name": "RateLimiter" }]
+			},
+			"migrations": [{ "tag": "v1", "new_sqlite_classes": ["RateLimiter"] }]
+		}
+	}
+}

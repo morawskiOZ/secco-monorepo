@@ -1,0 +1,150 @@
+name: Deploy LP to Cloudflare Workers
+
+# Replaces "Build and Push LP Image" (Docker -> GHCR -> Kubernetes).
+# Requires repository secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID.
+# See secco_LP/docs/hosting-cloudflare-workers.md.
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "staging = *.workers.dev test URL, production = www.seccostudio.com"
+        required: true
+        default: staging
+        type: choice
+        options: [staging, production]
+      version:
+        description: "Explicit semver for the production tag (optional). Blank = auto patch-bump from last lp-v*.*.* tag."
+        required: false
+        type: string
+      snapshot_timestamp:
+        description: "Content snapshot timestamp (optional, defaults to latest)"
+        required: false
+        type: string
+
+concurrency:
+  group: deploy-lp-${{ inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    defaults:
+      run:
+        working-directory: secco_LP
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve version
+        id: ver
+        if: inputs.environment == 'production'
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          if [ -n "$INPUT_VERSION" ]; then
+            VERSION="$INPUT_VERSION"
+            if ! echo "$VERSION" | grep -qE '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$'; then
+              echo "::error::Invalid semver: $VERSION"
+              exit 1
+            fi
+          else
+            git fetch --tags --quiet
+            LAST=$(git tag -l 'lp-v*' | grep -E '^lp-v[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,4}$' | sort -V | tail -1)
+            if [ -z "$LAST" ]; then
+              VERSION="0.0.1"
+            else
+              IFS=. read -r MAJ MIN PAT <<< "${LAST#lp-v}"
+              VERSION="$MAJ.$MIN.$((PAT+1))"
+            fi
+          fi
+          if git rev-parse "lp-v$VERSION" >/dev/null 2>&1; then
+            echo "::error::Tag lp-v$VERSION already exists"
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Resolved version: $VERSION"
+
+      - name: Download content snapshot from R2
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          SNAPSHOT_TIMESTAMP: ${{ inputs.snapshot_timestamp }}
+        run: |
+          SNAPSHOT_KEY="snapshots/latest.json"
+          if [ -n "$SNAPSHOT_TIMESTAMP" ]; then
+            SNAPSHOT_KEY="snapshots/${SNAPSHOT_TIMESTAMP}.json"
+          fi
+
+          aws s3 cp "s3://${R2_BUCKET_NAME}/${SNAPSHOT_KEY}" \
+            ./content-snapshot.json \
+            --endpoint-url "https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com" \
+            2>/dev/null || true
+
+          if [ -f content-snapshot.json ]; then
+            node -e "
+              const snapshot = require('./content-snapshot.json');
+              const fs = require('fs');
+              fs.mkdirSync('src/lib/content', { recursive: true });
+              fs.writeFileSync('src/lib/content/articles.json', JSON.stringify(snapshot.articles || []));
+              fs.writeFileSync('src/lib/content/projects.json', JSON.stringify(snapshot.projects || []));
+              fs.writeFileSync('src/lib/content/process.json', JSON.stringify(snapshot.process || null));
+            "
+            echo "Content snapshot loaded successfully"
+          else
+            echo "No content snapshot found, using empty defaults"
+            mkdir -p src/lib/content
+            echo '[]' > src/lib/content/articles.json
+            echo '[]' > src/lib/content/projects.json
+            echo 'null' > src/lib/content/process.json
+          fi
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: secco_LP/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Test Worker
+        run: npm test && npm run check:worker
+
+      - name: Build site
+        env:
+          PUBLIC_TURNSTILE_SITE_KEY: ${{ secrets.PUBLIC_TURNSTILE_SITE_KEY }}
+        run: npm run build
+
+      - name: Deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          TARGET: ${{ inputs.environment }}
+        run: |
+          if [ "$TARGET" = "production" ]; then
+            npx wrangler deploy --env=""
+          else
+            npx wrangler deploy --env staging
+          fi
+
+      - name: Create git tag
+        if: inputs.environment == 'production'
+        working-directory: .
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "lp-v$VERSION" -m "LP release v$VERSION"
+          git push origin "lp-v$VERSION"

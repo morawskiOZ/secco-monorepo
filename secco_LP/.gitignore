@@ -30,3 +30,6 @@ backend/secco-studio
 
 # Task
 .task/
+
+# Wrangler local secrets
+.dev.vars*

@@ -6,6 +6,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## [Unreleased]
 
+### Added
+- Cloudflare Workers hosting: `worker/` (TypeScript port of the Go backend — forms, Turnstile, 5/hour rate limit, Gmail SMTP), `wrangler.jsonc`, and the "Deploy LP to Cloudflare Workers" workflow. Plan and runbook in `docs/hosting-cloudflare-workers.md`. The Go backend stays until cutover is complete.
+- One-year cache header for hashed files under `/_app/immutable/`
+
 ### Planned
 - Navbar component with mobile hamburger menu
 - Blog section (Treści) — listing and article pages
