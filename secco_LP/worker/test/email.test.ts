@@ -129,6 +129,19 @@ describe('buildMessage', () => {
 		expect([...Buffer.from(b64.replace(/\r\n/g, ''), 'base64')]).toEqual([...data]);
 	});
 
+	it('prefixes the subject when configured (staging)', () => {
+		const text = dec(
+			buildMessage({ ...cfg, subjectPrefix: '[TEST] ' }, 'valuation', {
+				firstName: 'Jan',
+				lastName: 'K',
+				email: 'jan@example.com',
+				answers: {},
+				attachments: []
+			})
+		);
+		expect(text).toContain('Subject: =?utf-8?q?[TEST]_Nowa_wycena_=E2=80=94_Jan_K?=');
+	});
+
 	it('strips CR/LF from values that end up in headers', () => {
 		const text = dec(
 			buildMessage(cfg, 'valuation', {

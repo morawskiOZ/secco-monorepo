@@ -126,6 +126,15 @@ describe('slidingWindowAllow', () => {
 	});
 });
 
+describe('slidingWindowAllow with a custom limit', () => {
+	it('honours the limit passed in', () => {
+		let hits: number[] = [];
+		for (let i = 0; i < 2; i++) hits = slidingWindowAllow(hits, 1000 + i, 2).hits;
+		expect(slidingWindowAllow(hits, 2000, 2).allowed).toBe(false);
+		expect(slidingWindowAllow(hits, 2000, 3).allowed).toBe(true);
+	});
+});
+
 describe('canonicalRedirect', () => {
 	it('sends the apex to www over https, keeping path and query', () => {
 		expect(canonicalRedirect('http://seccostudio.com/x?y=1', 'www.seccostudio.com')).toBe(

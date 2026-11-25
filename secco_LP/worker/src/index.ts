@@ -20,6 +20,9 @@ interface Env {
 	SMTP_PASS: string;
 	RECIPIENT_EMAIL: string;
 	TURNSTILE_SECRET_KEY?: string;
+	/** Staging only: marks test emails and loosens the per-IP limit. */
+	SUBJECT_PREFIX?: string;
+	RATE_LIMIT_PER_HOUR?: string;
 }
 
 const TURNSTILE_VERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
@@ -28,7 +31,8 @@ function deps(env: Env): Deps {
 	return {
 		async allow(ip) {
 			try {
-				return await env.RATE_LIMITER.get(env.RATE_LIMITER.idFromName(ip)).allow();
+				const limit = Number(env.RATE_LIMIT_PER_HOUR) || undefined;
+				return await env.RATE_LIMITER.get(env.RATE_LIMITER.idFromName(ip)).allow(limit);
 			} catch (err) {
 				console.error(`rate limiter unavailable: ${err}`);
 				return true; // Turnstile still protects the form.
@@ -54,6 +58,7 @@ function deps(env: Env): Deps {
 				startTls: () => wrap(s.startTls()),
 				close: () => s.close()
 			});
+			if (!env.RECIPIENT_EMAIL) throw new Error('RECIPIENT_EMAIL is not set');
 			await sendMail({
 				connect: () =>
 					wrap(
@@ -68,7 +73,11 @@ function deps(env: Env): Deps {
 				from: env.SMTP_USER,
 				to: env.RECIPIENT_EMAIL,
 				message: buildMessage(
-					{ smtpUser: env.SMTP_USER, recipientEmail: env.RECIPIENT_EMAIL },
+					{
+						smtpUser: env.SMTP_USER,
+						recipientEmail: env.RECIPIENT_EMAIL,
+						subjectPrefix: env.SUBJECT_PREFIX
+					},
 					kind,
 					sub
 				)

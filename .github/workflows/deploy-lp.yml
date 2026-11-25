@@ -123,7 +123,9 @@ jobs:
 
       - name: Build site
         env:
-          PUBLIC_TURNSTILE_SITE_KEY: ${{ secrets.PUBLIC_TURNSTILE_SITE_KEY }}
+          # Staging runs on workers.dev, where the real widget is not allowed:
+          # use Cloudflare's always-pass Turnstile test key there.
+          PUBLIC_TURNSTILE_SITE_KEY: ${{ inputs.environment == 'production' && secrets.PUBLIC_TURNSTILE_SITE_KEY || '1x00000000000000000000AA' }}
         run: npm run build
 
       - name: Deploy

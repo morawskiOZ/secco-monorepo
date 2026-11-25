@@ -36,11 +36,15 @@
 			"name": "secco-studio-staging",
 			"workers_dev": true,
 			"routes": [],
+			// Staging never mails the studio: RECIPIENT_EMAIL is a secret holding the
+			// tester's own address (`wrangler secret put RECIPIENT_EMAIL --env staging`).
+			// Without it submissions fail with 500 instead of reaching the real inbox.
 			"vars": {
 				"SMTP_HOST": "smtp.gmail.com",
 				"SMTP_PORT": "587",
 				"SMTP_USER": "secco.studio@gmail.com",
-				"RECIPIENT_EMAIL": "secco.studio@gmail.com"
+				"SUBJECT_PREFIX": "[TEST] ",
+				"RATE_LIMIT_PER_HOUR": "50"
 			},
 			"durable_objects": {
 				"bindings": [{ "name": "RATE_LIMITER", "class_name": "RateLimiter" }]

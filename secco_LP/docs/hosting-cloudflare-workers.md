@@ -74,12 +74,35 @@ Decisions:
 
 ### Known risk: CPU limit on large uploads
 
-Measured locally: building the email costs about 1 ms CPU per MB of
-attachment. Free allows 10 ms per request, so files up to a few MB are fine
-and a 10 MB file is borderline (time waiting on Gmail does not count). If
-large uploads fail with error 1102 after go-live, the fix is the Workers Paid
-plan ($5/month, 30 s CPU) — still far below the cluster cost. Check this in
-staging step 4 below.
+Free allows a nominal 10 ms CPU per request (time waiting on Gmail does not
+count). Measured on staging on 2026-11-25: a 3 MB attachment used 24 ms and a
+10 MB attachment 64 ms, and both were delivered — Cloudflare tolerates
+occasional overruns, but does not guarantee it. If submissions with large
+files ever fail with error 1102 (visible in the Worker logs), the fix is the
+Workers Paid plan ($5/month, 30 s CPU) — still far below the cluster cost.
+
+## Testing forms without mailing the studio (staging)
+
+`https://secco-studio-staging.secco-studio.workers.dev` is the same code and
+site as production with three differences:
+
+- **Recipient** is the `RECIPIENT_EMAIL` *secret* of the staging Worker — the
+  tester's own address — not the studio inbox. If the secret is missing,
+  submissions fail with 500 rather than falling back to the real address.
+  Change it with `npx wrangler secret put RECIPIENT_EMAIL --env staging`.
+- **Subject** starts with `[TEST] `.
+- **Turnstile** uses Cloudflare's always-pass test keys (the real widget is
+  bound to the production hostnames), and the per-IP limit is 50/hour.
+
+Mail is still sent through the studio's Gmail account, so test messages show
+up in that account's Sent folder. Production is a separate Worker with its own
+secrets and counters; nothing done on staging touches it.
+
+Deploy staging from the Actions workflow (environment: staging) or locally:
+
+```bash
+PUBLIC_TURNSTILE_SITE_KEY=1x00000000000000000000AA npm run build && npm run deploy:staging
+```
 
 ## Runbook
 
@@ -145,5 +168,6 @@ the Hetzner load balancer IP (in the infra repo, `NODE_PUBLIC_IPS`/LB). The clus
       validation, rate limit, Turnstile, and a real STARTTLS + AUTH handshake
       with smtp.gmail.com; landing page HTML identical to production
 - [x] Deploy workflow
-- [ ] Cloudflare API token with Workers permissions (owner)
-- [ ] Steps 1–8 above
+- [x] Cloudflare API token with Workers permissions
+- [x] Staging deployed and verified 2026-11-25: routes, validation, rate limit, emails with no file / 3 MB / 10 MB
+- [ ] CI secrets (step 1), cutover (steps 5–6), burn-in, decommission (steps 7–8)

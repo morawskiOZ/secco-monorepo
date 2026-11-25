@@ -18,6 +18,8 @@ export interface Submission {
 export interface MailConfig {
 	smtpUser: string;
 	recipientEmail: string;
+	/** Prepended to the subject, e.g. "[TEST] " on staging. */
+	subjectPrefix?: string;
 }
 
 export type FormKind = 'valuation' | 'preferences';
@@ -164,7 +166,7 @@ export function base64Lines(data: Uint8Array): Uint8Array[] {
 /** Returns the full RFC 5322 message as CRLF-terminated chunks. */
 export function buildMessage(cfg: MailConfig, kind: FormKind, sub: Submission): Uint8Array[] {
 	const t = templates[kind];
-	const subject = oneLine(`${t.subject} — ${sub.firstName} ${sub.lastName}`);
+	const subject = oneLine(`${cfg.subjectPrefix ?? ''}${t.subject} — ${sub.firstName} ${sub.lastName}`);
 
 	let body: string = t.intro;
 	for (const [key, label] of t.labels) {
