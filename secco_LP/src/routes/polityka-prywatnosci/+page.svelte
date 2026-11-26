@@ -127,5 +127,7 @@
 
 	a {
 		color: var(--color-accent);
+		/* Links inside paragraphs must not rely on colour alone (WCAG 1.4.1). */
+		text-decoration: underline;
 	}
 </style>
