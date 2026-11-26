@@ -1,0 +1,101 @@
+# Sveltia CMS configuration (Decap-compatible). Served at /admin/ on builds
+# with SECCO_CONTENT=1. Fields must match src/lib/content/model.ts.
+
+backend:
+  name: github
+  repo: morawskiOZ/secco-monorepo
+  branch: main
+  commit_messages:
+    create: "content: dodano {{collection}} „{{slug}}”"
+    update: "content: zmieniono {{collection}} „{{slug}}”"
+    delete: "content: usunięto {{collection}} „{{slug}}”"
+    uploadMedia: "content: dodano zdjęcie {{path}}"
+    deleteMedia: "content: usunięto zdjęcie {{path}}"
+
+site_url: https://www.seccostudio.com
+logo_url: /favicon.ico
+
+media_folder: secco_LP/content/media
+public_folder: /media
+
+# Photos are shrunk in the browser before they are committed, so the
+# repository stays small; the site build makes the smaller sizes.
+media_libraries:
+  default:
+    config:
+      slugify_filename: true
+      transformations:
+        raster_image:
+          format: webp
+          quality: 88
+          width: 2560
+          height: 2560
+
+slug:
+  encoding: ascii
+  clean_accents: true
+
+collections:
+  - name: projects
+    label: Projekty
+    label_singular: Projekt
+    folder: secco_LP/content/projects
+    extension: md
+    format: frontmatter
+    create: true
+    slug: "{{title}}"
+    summary: "{{title}}"
+    sortable_fields: [order, date, title]
+    fields:
+      - { name: title, label: Tytuł, widget: string }
+      - { name: summary, label: Krótki opis, widget: text, required: false, hint: "1–2 zdania. Widoczne na liście projektów i w wynikach wyszukiwania." }
+      - { name: cover, label: Zdjęcie główne, widget: image }
+      - { name: cover_alt, label: Opis zdjęcia głównego, widget: string, required: false, hint: "Co widać na zdjęciu — dla osób niewidomych i wyszukiwarek." }
+      - { name: date, label: Data, widget: datetime, format: YYYY-MM-DD, date_format: YYYY-MM-DD, time_format: false }
+      - { name: order, label: Kolejność, widget: number, value_type: int, required: false, hint: "Mniejsza liczba = wyżej na liście. Puste = na końcu." }
+      - { name: location, label: Miejsce, widget: string, required: false, hint: "np. Wrocław" }
+      - { name: area, label: Powierzchnia, widget: string, required: false, hint: "np. 68 m²" }
+      - { name: year, label: Rok, widget: string, required: false }
+      - { name: draft, label: Szkic, widget: boolean, default: true, hint: "Szkice widać tylko w wersji testowej (stage2), nie na stronie głównej." }
+      - name: gallery
+        label: Galeria
+        label_singular: Zdjęcie
+        widget: list
+        required: false
+        summary: "{{fields.alt}}"
+        fields:
+          - { name: image, label: Zdjęcie, widget: image }
+          - { name: alt, label: Opis zdjęcia, widget: string, required: false }
+      - { name: body, label: Opis projektu, widget: markdown, required: false }
+
+  - name: articles
+    label: Treści
+    label_singular: Artykuł
+    folder: secco_LP/content/articles
+    extension: md
+    format: frontmatter
+    create: true
+    slug: "{{title}}"
+    summary: "{{title}}"
+    sortable_fields: [date, title]
+    fields:
+      - { name: title, label: Tytuł, widget: string }
+      - { name: summary, label: Zajawka, widget: text, required: false, hint: "1–2 zdania. Widoczne na liście artykułów i w wynikach wyszukiwania." }
+      - { name: cover, label: Zdjęcie główne, widget: image, required: false }
+      - { name: cover_alt, label: Opis zdjęcia głównego, widget: string, required: false }
+      - { name: date, label: Data publikacji, widget: datetime, format: YYYY-MM-DD, date_format: YYYY-MM-DD, time_format: false }
+      - { name: tags, label: Tematy, widget: list, required: false, hint: "Oddzielone przecinkami, np. Porady, Kuchnia" }
+      - { name: draft, label: Szkic, widget: boolean, default: true, hint: "Szkice widać tylko w wersji testowej (stage2)." }
+      - { name: body, label: Treść, widget: markdown }
+
+  - name: pages
+    label: Strony
+    files:
+      - name: proces-projektowy
+        label: Proces projektowy
+        file: secco_LP/content/pages/proces-projektowy.md
+        fields:
+          - { name: title, label: Tytuł, widget: string }
+          - { name: summary, label: Wstęp, widget: text, required: false }
+          - { name: draft, label: Szkic, widget: boolean, default: true, hint: "Szkic = strona widoczna tylko w wersji testowej (stage2)." }
+          - { name: body, label: Treść, widget: markdown }

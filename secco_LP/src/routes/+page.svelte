@@ -1,6 +1,7 @@
 <script>
 	import Hero from '$lib/components/landing/Hero.svelte';
 	import Footer from '$lib/components/landing/Footer.svelte';
+	import Navbar from '$navbar';
 </script>
 
 <svelte:head>
@@ -40,6 +41,7 @@
 </svelte:head>
 
 <div class="page">
+	<Navbar />
 	<main class="main">
 		<Hero />
 	</main>

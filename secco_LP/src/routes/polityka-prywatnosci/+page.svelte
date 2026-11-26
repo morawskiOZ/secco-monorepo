@@ -1,9 +1,14 @@
+<script>
+	import Navbar from '$navbar';
+</script>
+
 <svelte:head>
 	<title>Polityka Prywatności — Secco Studio</title>
 	<meta name="description" content="Polityka prywatności Secco Studio — informacje o przetwarzaniu danych osobowych." />
 	<link rel="canonical" href="https://www.seccostudio.com/polityka-prywatnosci" />
 </svelte:head>
 
+<Navbar />
 <main class="policy">
 	<h1>Polityka Prywatności</h1>
 

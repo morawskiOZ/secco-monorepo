@@ -5,25 +5,32 @@ name: Deploy LP to Cloudflare Workers
 # See secco_LP/docs/hosting-cloudflare-workers.md.
 
 on:
+  # Content saved in the CMS (a commit under secco_LP/content on main) goes
+  # straight to stage2. Production is only ever deployed by hand.
+  push:
+    branches: [main]
+    paths:
+      - "secco_LP/content/**"
+      - "secco_LP/cms/**"
   workflow_dispatch:
     inputs:
       environment:
-        description: "staging = *.workers.dev test URL, production = www.seccostudio.com"
+        description: "stage2 = content sections + CMS + drafts (workers.dev), staging = production build on workers.dev, production = www.seccostudio.com"
         required: true
-        default: staging
+        default: stage2
         type: choice
-        options: [staging, production]
+        options: [stage2, staging, production]
       version:
         description: "Explicit semver for the production tag (optional). Blank = auto patch-bump from last lp-v*.*.* tag."
         required: false
         type: string
-      snapshot_timestamp:
-        description: "Content snapshot timestamp (optional, defaults to latest)"
-        required: false
-        type: string
+
+env:
+  # A push has no inputs: it always means stage2.
+  TARGET: ${{ inputs.environment || 'stage2' }}
 
 concurrency:
-  group: deploy-lp-${{ inputs.environment }}
+  group: deploy-lp-${{ inputs.environment || 'stage2' }}
   cancel-in-progress: false
 
 jobs:
@@ -72,42 +79,6 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "Resolved version: $VERSION"
 
-      - name: Download content snapshot from R2
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
-          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
-          SNAPSHOT_TIMESTAMP: ${{ inputs.snapshot_timestamp }}
-        run: |
-          SNAPSHOT_KEY="snapshots/latest.json"
-          if [ -n "$SNAPSHOT_TIMESTAMP" ]; then
-            SNAPSHOT_KEY="snapshots/${SNAPSHOT_TIMESTAMP}.json"
-          fi
-
-          aws s3 cp "s3://${R2_BUCKET_NAME}/${SNAPSHOT_KEY}" \
-            ./content-snapshot.json \
-            --endpoint-url "https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com" \
-            2>/dev/null || true
-
-          if [ -f content-snapshot.json ]; then
-            node -e "
-              const snapshot = require('./content-snapshot.json');
-              const fs = require('fs');
-              fs.mkdirSync('src/lib/content', { recursive: true });
-              fs.writeFileSync('src/lib/content/articles.json', JSON.stringify(snapshot.articles || []));
-              fs.writeFileSync('src/lib/content/projects.json', JSON.stringify(snapshot.projects || []));
-              fs.writeFileSync('src/lib/content/process.json', JSON.stringify(snapshot.process || null));
-            "
-            echo "Content snapshot loaded successfully"
-          else
-            echo "No content snapshot found, using empty defaults"
-            mkdir -p src/lib/content
-            echo '[]' > src/lib/content/articles.json
-            echo '[]' > src/lib/content/projects.json
-            echo 'null' > src/lib/content/process.json
-          fi
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -118,15 +89,22 @@ jobs:
       - name: Install
         run: npm ci
 
-      - name: Test Worker
+      - name: Test
         run: npm test && npm run check:worker
 
       - name: Build site
         env:
-          # Staging runs on workers.dev, where the real widget is not allowed:
-          # use Cloudflare's always-pass Turnstile test key there.
+          # The real Turnstile widget only allows the production hostnames:
+          # workers.dev builds use Cloudflare's always-pass test key.
           PUBLIC_TURNSTILE_SITE_KEY: ${{ inputs.environment == 'production' && secrets.PUBLIC_TURNSTILE_SITE_KEY || '1x00000000000000000000AA' }}
-        run: npm run build
+        run: |
+          if [ "$TARGET" = "stage2" ]; then
+            # Content sections, CMS admin, drafts; hidden from search engines.
+            export SECCO_CONTENT=1 SECCO_DRAFTS=1 SECCO_NOINDEX=1
+          fi
+          # Going live with the content sections on production = adding
+          # SECCO_CONTENT=1 for production here (see docs/content-and-cms.md).
+          npm run build
 
       - name: Deploy
         env:
@@ -134,13 +112,12 @@ jobs:
           # of the Workers-scoped token to tell it apart from the zone-only one.
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          TARGET: ${{ inputs.environment }}
         run: |
-          if [ "$TARGET" = "production" ]; then
-            npx wrangler deploy --env=""
-          else
-            npx wrangler deploy --env staging
-          fi
+          case "$TARGET" in
+            production) npx wrangler deploy --env="" ;;
+            staging|stage2) npx wrangler deploy --env "$TARGET" ;;
+            *) echo "::error::Unknown environment: $TARGET"; exit 1 ;;
+          esac
 
       - name: Create git tag
         if: inputs.environment == 'production'
