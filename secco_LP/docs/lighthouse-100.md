@@ -36,7 +36,7 @@ manifest, accessibility tree, layout stability).
 | ARD manifest invalid | No manifest: `/.well-known/ard.json` got the SPA shell with 200 | Missing files under `/.well-known/` return 404 (audit then does not apply) | No |
 | Colour contrast (`/`) | Footer keyword line `#7F7F80` on `#EBD5C9` = 2.8:1 | `#5e5e5f` = 4.6:1, the lightest gray that passes | **Yes** |
 | Links rely on colour (privacy policy) | Navy links inside gray text, 2.0:1 against it, no underline | Links underlined | **Yes** |
-| Page blocked from indexing (forms) | `<meta name="robots" content="noindex">`, set on purpose | **Not changed** — see open decision | — |
+| Page blocked from indexing (forms) | `<meta name="robots" content="noindex">`, set on purpose | **Not changed** — owner decision, see below | — |
 
 ### Options rejected
 
@@ -76,19 +76,16 @@ at 390, 768, 1350 and 1920 px wide (plus five extra sizes for the form) were
 compared pixel by pixel. The form pages are identical. `/` differs only inside
 the hero photo and in the footer line; the privacy policy only at the links.
 
-## Open decision (owner)
+## Decision: the form pages stay `noindex`
 
-The form pages keep `noindex`, so their SEO score stays at 63 (mobile) / 66
-(desktop): Lighthouse fails "page is blocked from indexing" and nothing else.
-Reaching 100 means letting search engines index them.
+Decided by the owner on 2026-11-26. The form pages keep `noindex`, so their
+SEO score stays at 63 (mobile) / 66 (desktop): Lighthouse fails "page is
+blocked from indexing" and nothing else. This is deliberate, not a defect.
 
-- `/form` is the public valuation form linked from the home page. Indexing it
-  is low-risk and may bring visitors straight to the form.
-- `/form/preferences` is meant for existing clients who get the link from the
-  studio. Indexing it would expose it in search results.
-
-Recommendation: index `/form` (and add it to `sitemap.xml`), keep
-`/form/preferences` hidden and accept 63/66 there.
+- `/form`: visitors should reach the form through the landing page, not land
+  on it from a search result without context.
+- `/form/preferences`: meant for existing clients who get the link from the
+  studio.
 
 ## Not fixable from this repo
 
@@ -133,5 +130,12 @@ previous deployment in one step (or re-run the workflow from the previous
       identical to the local build; landing button opens the form, the form
       starts and shows question 1 with no console errors; API error paths
       unchanged (405, 400). Not done: a full form submission (owner).
-- [ ] Owner approval of visible changes; `noindex` decision
-- [ ] Production deploy and verification
+- [x] Owner approved the two visible changes 2026-11-26; `noindex` on the form
+      pages stays (see "Decision")
+- [x] Production deployed from Actions 2026-11-26, tag `lp-v0.0.2`, and
+      verified on www.seccostudio.com: 100 in every category on all four pages,
+      mobile and desktop, except SEO 63/66 on the two form pages (noindex);
+      response headers identical to the baseline; apex and http redirects 308;
+      API error paths 405/400; screenshots identical to staging; landing button
+      opens the form and the form starts with no console errors. Not done: a
+      full form submission (owner, through the tester allowlist).
