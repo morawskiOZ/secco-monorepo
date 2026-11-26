@@ -49,10 +49,12 @@
 		opacity: 0.9;
 	}
 
+	/* Sits wholly inside the hero: the hero clips its overflow, so a circle
+	   hanging below the edge would be cut off in a straight line at the footer. */
 	.hero::after {
 		content: '';
 		position: absolute;
-		bottom: -60px;
+		bottom: var(--spacing-md);
 		left: 50%;
 		transform: translateX(-50%);
 		width: 200px;
@@ -168,7 +170,6 @@
 		.hero::after {
 			width: 120px;
 			height: 120px;
-			bottom: -30px;
 		}
 	}
 

@@ -20,6 +20,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Changed
 - Landing page fits one screen on desktop and tablet-landscape sizes: the hero photo's height is capped to the space left by the footer (and the navigation bar, where present), so the page no longer scrolls by a few dozen pixels. Phones are unchanged
+- Landing page: the gray decorative circle sits fully inside the hero instead of being cut off in a straight line at the footer
 - The Worker no longer runs for files under `/_app/`, `/media/`, `/images/` and `/fonts/`: those requests do not count against the Workers Free daily limit, and missing files there return 404
 - `/polityka-prywatnosci` ships no JavaScript
 - `sitemap.xml` is generated at build time (identical output while no content is published)
