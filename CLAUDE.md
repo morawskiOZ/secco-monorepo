@@ -12,7 +12,8 @@ secco/
 │   ├── src/                     # pages and components
 │   ├── worker/                  # forms API, redirects (Cloudflare Worker)
 │   └── docs/                    # plans and runbooks — read before changing hosting or content
-└── .github/workflows/deploy-lp.yml
+├── cms-auth/                    # "Sign In with GitHub" helper Worker for the CMS (vendored)
+└── .github/workflows/           # deploy-lp.yml (site), deploy-cms-auth.yml (sign-in Worker)
 ```
 
 ## Environments

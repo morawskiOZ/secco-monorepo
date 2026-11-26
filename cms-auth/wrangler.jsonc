@@ -1,0 +1,16 @@
+{
+	// Sign-in helper for the CMS at /admin/: exchanges GitHub's authorization code
+	// for a user token (that step needs a client secret, which a static page
+	// cannot hold). Setup and deploy: README.md in this folder.
+	"name": "secco-cms-auth",
+	"main": "src/index.js",
+	"compatibility_date": "2026-11-11",
+	"workers_dev": true,
+	"preview_urls": false,
+	// Secrets (set by the deploy workflow): GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET.
+	"vars": {
+		// Only pages on these hosts can start a sign-in or receive a token.
+		"ALLOWED_DOMAINS": "secco-studio-stage2.secco-studio.workers.dev, www.seccostudio.com"
+	},
+	"observability": { "enabled": true }
+}
