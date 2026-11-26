@@ -3,7 +3,7 @@
 // /api/*, the apex -> www redirect and the SPA fallback.
 
 import { connect } from 'cloudflare:sockets';
-import { buildMessage, type FormKind } from './email';
+import { buildMessage, mailRoute, type FormKind } from './email';
 import { canonicalRedirect, handleSubmit, type Deps } from './handler';
 import { RateLimiter } from './ratelimit';
 import { sendMail, type Conn } from './smtp';
@@ -23,6 +23,8 @@ interface Env {
 	/** Staging only: marks test emails and loosens the per-IP limit. */
 	SUBJECT_PREFIX?: string;
 	RATE_LIMIT_PER_HOUR?: string;
+	/** Secret, comma-separated: submitters who get their own submission back (see mailRoute). */
+	TEST_EMAILS?: string;
 }
 
 const TURNSTILE_VERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
@@ -59,6 +61,12 @@ function deps(env: Env): Deps {
 				close: () => s.close()
 			});
 			if (!env.RECIPIENT_EMAIL) throw new Error('RECIPIENT_EMAIL is not set');
+			const route = mailRoute(
+				sub.email,
+				{ recipientEmail: env.RECIPIENT_EMAIL, subjectPrefix: env.SUBJECT_PREFIX },
+				env.TEST_EMAILS
+			);
+			if (route.recipientEmail !== env.RECIPIENT_EMAIL) console.log('tester submission: not sent to the studio');
 			await sendMail({
 				connect: () =>
 					wrap(
@@ -71,12 +79,12 @@ function deps(env: Env): Deps {
 				user: env.SMTP_USER,
 				pass: env.SMTP_PASS,
 				from: env.SMTP_USER,
-				to: env.RECIPIENT_EMAIL,
+				to: route.recipientEmail,
 				message: buildMessage(
 					{
 						smtpUser: env.SMTP_USER,
-						recipientEmail: env.RECIPIENT_EMAIL,
-						subjectPrefix: env.SUBJECT_PREFIX
+						recipientEmail: route.recipientEmail,
+						subjectPrefix: route.subjectPrefix
 					},
 					kind,
 					sub

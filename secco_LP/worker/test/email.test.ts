@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { base64Lines, buildMessage, encodeSubject } from '../src/email';
+import { base64Lines, buildMessage, encodeSubject, mailRoute } from '../src/email';
 
 const cfg = { smtpUser: 'studio@example.com', recipientEmail: 'inbox@example.com' };
 const dec = (chunks: Uint8Array[]) => Buffer.concat(chunks).toString('utf8');
@@ -155,5 +155,40 @@ describe('buildMessage', () => {
 		const head = text.split('\r\n\r\n')[0];
 		expect(head).not.toMatch(/^Bcc:/m);
 		expect(head.split('\r\n')).toHaveLength(6);
+	});
+});
+
+describe('mailRoute', () => {
+	const base = { recipientEmail: 'inbox@example.com', subjectPrefix: undefined };
+
+	it('sends to the studio when no tester list is configured', () => {
+		expect(mailRoute('me@tester.dev', base, undefined)).toEqual(base);
+		expect(mailRoute('me@tester.dev', base, '')).toEqual(base);
+	});
+
+	it('sends to the studio when the submitter is not on the list', () => {
+		expect(mailRoute('client@example.com', base, 'me@tester.dev')).toEqual(base);
+	});
+
+	it('sends a listed tester their own submission, marked [TEST]', () => {
+		expect(mailRoute('me@tester.dev', base, 'me@tester.dev')).toEqual({
+			recipientEmail: 'me@tester.dev',
+			subjectPrefix: '[TEST] '
+		});
+	});
+
+	it('matches case-insensitively across a comma/space separated list', () => {
+		const list = ' other@tester.dev , Me@Tester.dev ';
+		expect(mailRoute('ME@tester.DEV', base, list).recipientEmail).toBe('ME@tester.DEV');
+	});
+
+	it('requires an exact address match, not a substring', () => {
+		expect(mailRoute('xme@tester.dev', base, 'me@tester.dev')).toEqual(base);
+		expect(mailRoute('me@tester.dev.evil.com', base, 'me@tester.dev')).toEqual(base);
+	});
+
+	it('does not double the prefix on staging', () => {
+		const staging = { recipientEmail: 'qa@example.com', subjectPrefix: '[TEST] ' };
+		expect(mailRoute('me@tester.dev', staging, 'me@tester.dev').subjectPrefix).toBe('[TEST] ');
 	});
 });

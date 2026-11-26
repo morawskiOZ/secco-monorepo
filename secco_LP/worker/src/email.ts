@@ -220,3 +220,23 @@ export function buildMessage(cfg: MailConfig, kind: FormKind, sub: Submission): 
 	chunks.push(enc.encode(`--${boundary}--\r\n`));
 	return chunks;
 }
+
+export interface MailRoute {
+	recipientEmail: string;
+	subjectPrefix?: string;
+}
+
+/**
+ * Tester allowlist: when the address typed into the form is on `testEmails`
+ * (comma-separated, a Worker secret), the submission is mailed back to that
+ * address with a [TEST] subject instead of reaching the studio inbox.
+ * Lets the production form be tested end to end without real-looking leads.
+ */
+export function mailRoute(submitterEmail: string, normal: MailRoute, testEmails: string | undefined): MailRoute {
+	const testers = (testEmails ?? '')
+		.split(',')
+		.map((e) => e.trim().toLowerCase())
+		.filter(Boolean);
+	if (!testers.includes(submitterEmail.trim().toLowerCase())) return normal;
+	return { recipientEmail: submitterEmail, subjectPrefix: '[TEST] ' };
+}

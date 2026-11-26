@@ -104,6 +104,19 @@ Deploy staging from the Actions workflow (environment: staging) or locally:
 PUBLIC_TURNSTILE_SITE_KEY=1x00000000000000000000AA npm run build && npm run deploy:staging
 ```
 
+## Testing the production form (tester allowlist)
+
+Fill in the real form on www.seccostudio.com with an email address listed in
+the `TEST_EMAILS` secret. The submission is mailed to that address with a
+`[TEST] ` subject and never reaches the studio inbox. Everything else is the
+real path: Turnstile, the 5/hour limit, Gmail, attachments.
+
+- Set or change the list (comma-separated, matched exactly, case-insensitive):
+  `npx wrangler secret put TEST_EMAILS --env=""` (staging: `--env staging`).
+- Turn it off: `npx wrangler secret delete TEST_EMAILS --env=""`.
+- A customer who uses a listed address would not reach the studio, so list
+  only addresses you own. Test mail still shows in the studio's Sent folder.
+
 ## Runbook
 
 Prerequisite (owner, once): a Cloudflare API token with **Workers Scripts:
@@ -164,7 +177,7 @@ the Hetzner load balancer IP (in the infra repo, `NODE_PUBLIC_IPS`/LB). The clus
 
 ## Status
 
-- [x] Worker written and unit-tested (23 tests)
+- [x] Worker written and unit-tested (31 tests)
 - [x] Verified locally with `wrangler dev`: routes, SPA fallback, redirects,
       validation, rate limit, Turnstile, and a real STARTTLS + AUTH handshake
       with smtp.gmail.com; landing page HTML identical to production
