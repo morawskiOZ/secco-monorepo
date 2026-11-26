@@ -138,7 +138,7 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<div class="form-container">
+<main class="form-container">
 	{#if screen === 'welcome'}
 		<WelcomeScreen {config} onstart={start} />
 	{:else if screen === 'thankyou'}
@@ -223,7 +223,7 @@
 			{/key}
 		</div>
 	{/if}
-</div>
+</main>
 
 <style>
 	.form-container {

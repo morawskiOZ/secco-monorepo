@@ -13,6 +13,8 @@
 		<div class="hero-image-wrapper">
 			<img
 				src="/images/hero.webp"
+				srcset="/images/hero-480.webp 480w, /images/hero-640.webp 640w, /images/hero.webp 800w"
+				sizes="(max-width: 768px) calc(100vw - 48px), 568px"
 				alt="Wnętrze kuchni zaprojektowane przez Secco Studio"
 				width="800"
 				height="1202"

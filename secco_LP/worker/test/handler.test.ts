@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { canonicalRedirect, handleSubmit, MAX_BODY_BYTES, type Deps } from '../src/handler';
+import { canonicalRedirect, handleSubmit, MAX_BODY_BYTES, servesSpaShell, type Deps } from '../src/handler';
 import { slidingWindowAllow } from '../src/window';
 
 function deps(over: Partial<Deps> = {}) {
@@ -151,5 +151,19 @@ describe('canonicalRedirect', () => {
 		expect(canonicalRedirect('https://secco-studio.x.workers.dev/', 'www.seccostudio.com')).toBeNull();
 		expect(canonicalRedirect('https://seccostudio.com/', undefined)).toBeNull();
 		expect(canonicalRedirect('http://localhost:8787/', 'www.seccostudio.com')).toBeNull();
+	});
+});
+
+describe('servesSpaShell', () => {
+	it('answers unknown page paths with the SPA shell, as before', () => {
+		expect(servesSpaShell('/form')).toBe(true);
+		expect(servesSpaShell('/form/preferences')).toBe(true);
+		expect(servesSpaShell('/nope')).toBe(true);
+		expect(servesSpaShell('/nope/deeper.html')).toBe(true);
+	});
+	it('leaves missing /.well-known/ files as 404 so probes do not get HTML', () => {
+		expect(servesSpaShell('/.well-known/ard.json')).toBe(false);
+		expect(servesSpaShell('/.well-known/security.txt')).toBe(false);
+		expect(servesSpaShell('/.well-known-page')).toBe(true);
 	});
 });

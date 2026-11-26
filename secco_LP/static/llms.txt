@@ -1,0 +1,14 @@
+# Secco Studio
+
+> Studio projektowe zlokalizowane we Wrocławiu. Zajmujemy się kompleksową aranżacją wnętrz domów i mieszkań: projektujemy, doradzamy i nadzorujemy realizację.
+
+## Strony
+
+- [Strona główna](https://www.seccostudio.com/): opis studia i zakres usług
+- [Formularz wyceny](https://www.seccostudio.com/form): wycena projektu wnętrza
+- [Polityka prywatności](https://www.seccostudio.com/polityka-prywatnosci): zasady przetwarzania danych osobowych
+
+## Kontakt
+
+- [Instagram](https://www.instagram.com/secco.studio/)
+- [Portfolio (Issuu)](https://issuu.com/secco.studio)

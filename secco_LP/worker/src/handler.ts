@@ -39,6 +39,15 @@ export function canonicalRedirect(reqUrl: string, canonicalHost: string | undefi
 	return url.toString();
 }
 
+/**
+ * Unknown paths get the SvelteKit SPA shell with status 200 (the Go server did
+ * the same), except under /.well-known/: clients probing for machine-readable
+ * files there (ard.json, security.txt, ...) must see a 404, not an HTML page.
+ */
+export function servesSpaShell(pathname: string): boolean {
+	return !pathname.startsWith('/.well-known/');
+}
+
 export function clientIP(req: Request): string {
 	return (
 		req.headers.get('CF-Connecting-IP') ??

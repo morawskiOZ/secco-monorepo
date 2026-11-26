@@ -4,7 +4,7 @@
 
 import { connect } from 'cloudflare:sockets';
 import { buildMessage, mailRoute, type FormKind } from './email';
-import { canonicalRedirect, handleSubmit, type Deps } from './handler';
+import { canonicalRedirect, handleSubmit, servesSpaShell, type Deps } from './handler';
 import { RateLimiter } from './ratelimit';
 import { sendMail, type Conn } from './smtp';
 
@@ -119,6 +119,7 @@ export default {
 		// (the Go server answered every unknown path with 200.html).
 		const res = await env.ASSETS.fetch(req);
 		if (res.status !== 404) return res;
+		if (!servesSpaShell(url.pathname)) return new Response('Not Found\n', { status: 404 });
 		const shell = await env.ASSETS.fetch(new Request(new URL('/200', url), { headers: req.headers }));
 		return new Response(shell.body, { status: 200, headers: shell.headers });
 	}
