@@ -2,6 +2,9 @@
 	"$schema": "node_modules/wrangler/config-schema.json",
 	// Production: `wrangler deploy`               -> www.seccostudio.com + seccostudio.com
 	// Staging:    `wrangler deploy --env staging` -> secco-studio-staging.<account>.workers.dev
+	//             (same build as production, for testing forms and releases)
+	// Stage2:     `wrangler deploy --env stage2`  -> secco-studio-stage2.<account>.workers.dev
+	//             (content sections + CMS + drafts; see docs/content-and-cms.md)
 	"name": "secco-studio",
 	"main": "worker/src/index.ts",
 	"compatibility_date": "2026-11-01",
@@ -10,9 +13,10 @@
 	"assets": {
 		"directory": "./build",
 		"binding": "ASSETS",
-		// The Worker runs first so the apex host can redirect to www; files are
-		// then served through the ASSETS binding.
-		"run_worker_first": true
+		// The Worker runs first for pages and /api (apex -> www redirect, SPA
+		// fallback). Fingerprinted files, photos and fonts skip it: those requests
+		// are free and do not count against the Workers Free 100k requests/day.
+		"run_worker_first": ["/*", "!/_app/*", "!/media/*", "!/images/*", "!/fonts/*"]
 	},
 	"routes": [
 		{ "pattern": "www.seccostudio.com", "custom_domain": true },
@@ -47,6 +51,26 @@
 				"SMTP_USER": "secco.studio@gmail.com",
 				"SUBJECT_PREFIX": "[TEST] ",
 				"RATE_LIMIT_PER_HOUR": "50"
+			},
+			"durable_objects": {
+				"bindings": [{ "name": "RATE_LIMITER", "class_name": "RateLimiter" }]
+			},
+			"migrations": [{ "tag": "v1", "new_sqlite_classes": ["RateLimiter"] }]
+		},
+		"stage2": {
+			"name": "secco-studio-stage2",
+			"workers_dev": true,
+			"routes": [],
+			// Like staging: mail only goes out once the RECIPIENT_EMAIL and SMTP_PASS
+			// secrets are set, and then to the tester, never to the studio.
+			"vars": {
+				"SMTP_HOST": "smtp.gmail.com",
+				"SMTP_PORT": "587",
+				"SMTP_USER": "secco.studio@gmail.com",
+				"SUBJECT_PREFIX": "[TEST stage2] ",
+				"RATE_LIMIT_PER_HOUR": "50",
+				// Cloudflare's published always-pass Turnstile test secret (not a real secret).
+				"TURNSTILE_SECRET_KEY": "1x0000000000000000000000000000000AA"
 			},
 			"durable_objects": {
 				"bindings": [{ "name": "RATE_LIMITER", "class_name": "RateLimiter" }]

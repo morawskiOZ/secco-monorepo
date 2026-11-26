@@ -69,26 +69,29 @@ All question text is in Polish. See `task.md` for the complete question list wit
 - Build: SvelteKit builds to `build/`, Go embeds via `embed.FS`
 - Deploy: Docker (multi-stage, scratch base) → MicroK8s cluster
 
+## Content sections (behind `SECCO_CONTENT=1`)
+
+Projekty, Treści and Proces projektowy are prerendered from Markdown in
+`content/`; `/admin/` is Sveltia CMS. Off on production, on for stage2. Read
+`docs/content-and-cms.md` before changing any of it. The fields in
+`cms/config.yml` must match `src/lib/content/model.ts`.
+
 ## Development Commands
 
 ```bash
-# Frontend
 npm install
-npm run dev              # Dev server on :5173 (with Vite proxy to Go)
-npm run build            # Build to build/
-npm run preview          # Preview static build
-
-# Backend
-cd backend && go run .                       # API server on :8080
-cd backend && go build -o secco-studio .     # Build binary
-
-# Docker
-docker build -t secco-studio .
-docker run -p 8080:8080 --env-file .env secco-studio
-
-# K8s (MicroK8s)
-kubectl apply -f k8s/
+npm run dev              # landing page + forms on :5173
+SECCO_CONTENT=1 SECCO_DRAFTS=1 npm run dev    # with content sections and drafts
+npm run build            # production build (content off)
+npm run build:stage2     # stage2 build (content, drafts, noindex)
+npm run dev:worker       # built site + Worker locally (wrangler dev)
+npm test                 # unit tests (content logic + Worker)
+npm run check && npm run check:worker
 ```
+
+Hosting is Cloudflare Workers (`docs/hosting-cloudflare-workers.md`). The Go
+backend and Dockerfile are the previous hosting, kept until the cluster is
+decommissioned.
 
 ## Environment Variables
 

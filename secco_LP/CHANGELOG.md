@@ -7,10 +7,24 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [Unreleased]
 
 ### Added
+- Content sections behind a build switch (`SECCO_CONTENT=1`, off on production): Projekty (portfolio with photo viewer), Treści (articles with topic pages), Proces projektowy, and a navigation bar. Content lives as Markdown in `content/`; plan and runbook in `docs/content-and-cms.md`
+- CMS at `/admin/` (Sveltia CMS, git-based) with Polish field labels; saving commits to the repository
+- Drafts (`draft: true`): built only where `SECCO_DRAFTS=1` is set
+- Photos in `content/media` are resized at build time to WebP in up to four widths
+- `stage2` environment (`secco-studio-stage2` Worker): content sections, CMS and drafts, hidden from search engines; redeployed on every content commit to `main`
 - Cloudflare Workers hosting: `worker/` (TypeScript port of the Go backend — forms, Turnstile, 5/hour rate limit, Gmail SMTP), `wrangler.jsonc`, and the "Deploy LP to Cloudflare Workers" workflow. Plan and runbook in `docs/hosting-cloudflare-workers.md`. The Go backend stays until cutover is complete.
 - Staging Worker for testing forms end to end: mails a tester address (secret) with a `[TEST]` subject prefix instead of the studio inbox
 - Tester allowlist (`TEST_EMAILS` secret): a form submitted with a listed email address is mailed back to that address with a `[TEST]` subject instead of the studio inbox, so the production form can be tested end to end
 - One-year cache header for hashed files under `/_app/immutable/`
+
+### Changed
+- The Worker no longer runs for files under `/_app/`, `/media/`, `/images/` and `/fonts/`: those requests do not count against the Workers Free daily limit, and missing files there return 404
+- `/polityka-prywatnosci` ships no JavaScript
+- `sitemap.xml` is generated at build time (identical output while no content is published)
+- Deploy workflow no longer downloads a content snapshot from R2
+
+### Removed
+- `secco_cms` (Go + SQLite admin app), `secco_renderer` (shared npm package) and the R2 snapshot pipeline, replaced by Markdown in git + Sveltia CMS. Never deployed; the code remains in git history
 
 ### Changed
 - Lighthouse 100 work (plan and measurements in `docs/lighthouse-100.md`): stylesheets are inlined, the landing page ships no JavaScript, the hero image is served in three sizes, and the form's welcome image reserves its space so the text beside it no longer jumps
@@ -21,20 +35,6 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 - `llms.txt`
-
-### Planned
-- Navbar component with mobile hamburger menu
-- Blog section (Treści) — listing and article pages
-- Portfolio section (Projekty) — grid and project detail pages
-- Design process page (Proces projektowy)
-- SQLite content storage in Go backend
-- Content management API (public read + protected CRUD)
-- Cloudflare Images integration for image upload and optimization
-- SEO meta tag injection for dynamic content pages
-- Separate CMS app (secco_cms) with markdown editor and preview
-- Responsive image delivery via Cloudflare flexible variants
-- Image lightbox for project galleries
-- Content preview system for draft content
 
 ## [1.2.0] - 2026-04-15
 

@@ -4,28 +4,34 @@
 	"version": "1.0.0",
 	"type": "module",
 	"scripts": {
-		"dev": "vite dev",
-		"build": "vite build",
+		"dev": "node scripts/prebuild.ts && vite dev",
+		"build": "node scripts/prebuild.ts && vite build && node scripts/postbuild.ts",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
-		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-		"test": "vitest run worker/test",
+		"check": "node scripts/prebuild.ts && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"test": "vitest run test worker/test",
 		"check:worker": "tsc -p worker/tsconfig.json",
 		"dev:worker": "wrangler dev --env staging",
 		"deploy:staging": "wrangler deploy --env staging",
-		"deploy": "wrangler deploy --env=\"\""
+		"deploy": "wrangler deploy --env=\"\"",
+		"prebuild:content": "node scripts/prebuild.ts",
+		"build:stage2": "SECCO_CONTENT=1 SECCO_DRAFTS=1 SECCO_NOINDEX=1 npm run build",
+		"deploy:stage2": "wrangler deploy --env stage2"
 	},
 	"devDependencies": {
 		"@cloudflare/workers-types": "^5.20261125.1",
 		"@sveltejs/adapter-static": "^3.0.0",
 		"@sveltejs/kit": "^2.50.2",
 		"@sveltejs/vite-plugin-svelte": "^6.2.4",
+		"marked": "^18.3.0",
+		"sharp": "^0.35.5",
 		"svelte": "^5.51.0",
 		"svelte-check": "^4.4.2",
 		"typescript": "^5.9.3",
 		"vite": "^7.3.1",
 		"vitest": "^5.1.2",
-		"wrangler": "^4.168.0"
+		"wrangler": "^4.168.0",
+		"yaml": "^2.9.1"
 	},
 	"allowScripts": {
 		"workerd@1.20261123.1": true,
