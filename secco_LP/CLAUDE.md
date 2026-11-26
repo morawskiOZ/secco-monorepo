@@ -2,29 +2,30 @@
 
 ## Project Overview
 
-Complete website for Secco Studio (interior design studio in Wroclaw, Poland). Single app with landing page and project valuation form. Replaces both the existing Next.js landing page and Typeform survey.
+Complete website for Secco Studio (interior design studio in Wroclaw, Poland). Single app with landing page, valuation and preference forms, and — behind a build switch — a portfolio, articles and a design-process page.
 
 **Domain:** www.seccostudio.com
-**Routes:** `/` (landing page), `/form` (valuation form), `/polityka-prywatnosci` (privacy policy)
+**Routes:** `/` (landing page), `/form` (valuation form), `/form/preferences` (preference survey), `/polityka-prywatnosci` (privacy policy); with `SECCO_CONTENT=1` also `/projekty`, `/tresci`, `/proces-projektowy`, `/admin/`
 **Business purpose:** Lead generation — form submissions are emailed to the studio for follow-up with project offers.
 
 ## Architecture
 
 **Frontend:** SvelteKit (static adapter)
-- Landing page (`/`) prerendered to static HTML — zero/minimal JS, perfect Lighthouse
+- Landing page (`/`) and privacy policy prerendered to static HTML with no JavaScript — perfect Lighthouse
 - Form page (`/form`) client-side interactive — Typeform-style one-question-at-a-time flow
 - Questions defined in a config file (`src/lib/config/questions.ts`) for easy modification
 - Plain CSS with design tokens — no UI framework, no Tailwind
 
-**Backend:** Go single binary
-- Serves the SvelteKit static build via `embed.FS`
-- `POST /api/submit` — receives multipart form data, verifies Turnstile token, sends email
+**Backend:** Cloudflare Worker (`worker/`, TypeScript) on the Workers Free plan
+- Static build served by Workers Static Assets; the Worker handles `/api/*`, the apex → www redirect and the SPA fallback
+- `POST /api/submit`, `POST /api/submit-preferences` — multipart form data, Turnstile check, 5/hour per IP (Durable Object), email through Gmail SMTP
 - Reply-To header set to customer's email for easy reply
 - No database, no file storage (files in-memory during request only)
+- `backend/` (Go) and the Dockerfile are the previous hosting, kept until the old cluster is decommissioned
 
 **Bot protection:** Cloudflare Turnstile (form page only)
 - Client-side: explicit render mode, token stored in Svelte state
-- Server-side: Go verifies token against Cloudflare siteverify API before processing
+- Server-side: the Worker verifies the token against Cloudflare siteverify API before processing
 
 **Legal:** GDPR Art. 6(1)(b) — pre-contractual measures (no consent checkbox)
 - Short info clause near submit + link to `/polityka-prywatnosci` privacy policy page
@@ -59,15 +60,16 @@ Fonts:             "Open Sans", "Roboto", "Montserrat", sans-serif
 
 ## Form Questions (14 questions)
 
-All question text is in Polish. See `task.md` for the complete question list with types.
+All question text is in Polish and lives in `src/lib/config/questions.ts`. (`task.md` is the original 2026 build plan; its CMS phases are superseded by `docs/content-and-cms.md`.)
 
 ## Tech Stack
 
 - Frontend: SvelteKit 2, Svelte 5, TypeScript, plain CSS
 - Static adapter: prerender landing page, SPA mode for form
-- Backend: Go 1.22+, net/http, net/smtp
-- Build: SvelteKit builds to `build/`, Go embeds via `embed.FS`
-- Deploy: Docker (multi-stage, scratch base) → MicroK8s cluster
+- Backend: Cloudflare Worker (TypeScript), Durable Object for rate limiting, `cloudflare:sockets` for SMTP
+- Build: `scripts/prebuild.ts` (photos, CMS admin) → SvelteKit builds to `build/`
+- Deploy: GitHub Actions "Deploy LP to Cloudflare Workers" → `wrangler deploy` (production, staging, stage2)
+- Tests: vitest (`test/` content logic, `worker/test/` forms)
 
 ## Content sections (behind `SECCO_CONTENT=1`)
 
@@ -107,9 +109,14 @@ RECIPIENT_EMAIL=secco.studio@gmail.com
 PUBLIC_TURNSTILE_SITE_KEY=<public-sitekey>  # build-time only (baked into frontend)
 TURNSTILE_SECRET_KEY=<secret-key>
 
-# Server
-PORT=8080
+# Build switches (see src/lib/flags.ts)
+SECCO_CONTENT=1   # content sections, navigation bar, /admin/   (stage2)
+SECCO_DRAFTS=1    # also build entries marked draft: true        (stage2)
+SECCO_NOINDEX=1   # X-Robots-Tag: noindex on everything          (stage2)
 ```
+
+On Cloudflare, `SMTP_PASS`, `TURNSTILE_SECRET_KEY` and (staging/stage2)
+`RECIPIENT_EMAIL` are Worker secrets; the rest are `vars` in `wrangler.jsonc`.
 
 ## Changelog
 

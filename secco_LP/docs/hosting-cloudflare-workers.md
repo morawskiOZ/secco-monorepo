@@ -48,6 +48,11 @@ browser ── Cloudflare ── Worker "secco-studio" (worker/src/index.ts)
                                unknown paths → 200.html
 ```
 
+Since `lp-v0.0.3` the Worker is skipped for `/_app/*`, `/media/*`, `/images/*`
+and `/fonts/*` (`run_worker_first` in `wrangler.jsonc`): those files are served
+straight from static assets, do not count against the 100k requests/day, and
+return 404 when missing.
+
 Decisions:
 
 - **Email stays on Gmail SMTP.** Same sender, recipient, Reply-To, subjects and
@@ -170,7 +175,10 @@ the Hetzner load balancer IP (in the infra repo, `NODE_PUBLIC_IPS`/LB). The clus
 
 ## Day-to-day
 
-- Deploy: GitHub → Actions → "Deploy LP to Cloudflare Workers" → staging or production.
+- Deploy: GitHub → Actions → "Deploy LP to Cloudflare Workers" → stage2, staging or production.
+  Staging and production are the same build; stage2 adds the content sections,
+  CMS and drafts (`content-and-cms.md`) and redeploys itself on content commits.
+  Wrangler is not logged in on the development machine, so deploys go through Actions.
 - Local: `npm run build && npm run dev:worker` (secrets in `.dev.vars`, see `.env.example`).
 - Tests: `npm test`, `npm run check:worker`.
 - Logs: `npx wrangler tail`, or Workers → secco-studio → Logs in the dashboard.
@@ -189,4 +197,7 @@ the Hetzner load balancer IP (in the infra repo, `NODE_PUBLIC_IPS`/LB). The clus
       www.seccostudio.com and seccostudio.com (about 14 s between deleting the
       DNS records and the deploy). Verified: pages, SPA fallback, 308 redirects,
       API errors, certificates, cache headers.
+- [x] Later production deploys from Actions on 2026-11-26: `lp-v0.0.2`
+      (Lighthouse 100) and `lp-v0.0.3` (content code with sections off, static
+      files bypass the Worker, landing page layout fix)
 - [ ] Burn-in until 2026-11-28, then decommission (steps 7–8)

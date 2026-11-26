@@ -1,5 +1,7 @@
 # Secco Studio — Website Expansion & CMS
 
+> **Historical (2026-03/04).** The original build plan. The form questions and landing page notes still describe the site; the CMS, content API, R2 and Kubernetes parts were never deployed and are superseded by `docs/content-and-cms.md` and `docs/hosting-cloudflare-workers.md`.
+
 ## Architecture Overview
 
 ```
