@@ -184,4 +184,9 @@ the Hetzner load balancer IP (in the infra repo, `NODE_PUBLIC_IPS`/LB). The clus
 - [x] Deploy workflow
 - [x] Cloudflare API token with Workers permissions
 - [x] Staging deployed and verified 2026-11-25: routes, validation, rate limit, emails with no file / 3 MB / 10 MB
-- [ ] CI secrets (step 1), cutover (steps 5–6), burn-in, decommission (steps 7–8)
+- [x] CI secrets set; staging deploy from Actions verified 2026-11-26
+- [x] Cutover 2026-11-26: production Worker `secco-studio` serves
+      www.seccostudio.com and seccostudio.com (about 14 s between deleting the
+      DNS records and the deploy). Verified: pages, SPA fallback, 308 redirects,
+      API errors, certificates, cache headers.
+- [ ] Burn-in until 2026-11-28, then decommission (steps 7–8)
