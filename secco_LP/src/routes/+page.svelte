@@ -55,6 +55,11 @@
 		min-height: 100vh;
 	}
 
+	/* Tells the hero how much height the navigation bar takes (content sections on). */
+	.page:has(:global(header.navbar)) {
+		--landing-nav-height: 64px;
+	}
+
 	/* Landmark only: passes the page's column layout through to the hero. */
 	.main {
 		flex: 1;

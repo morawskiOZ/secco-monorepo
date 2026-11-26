@@ -126,6 +126,14 @@
 		object-fit: cover;
 	}
 
+	/* Two-column layout: keep hero + footer inside one screen, so the page does
+	   not scroll. 16rem = the hero's vertical padding (2 × 4rem) + the footer (8rem). */
+	@media (min-width: 769px) {
+		.hero-image-wrapper {
+			max-height: min(75vh, calc(100vh - 16rem - var(--landing-nav-height, 0px)));
+		}
+	}
+
 	@media (max-width: 768px) {
 		.hero {
 			padding: var(--spacing-2xl) var(--spacing-lg);
