@@ -40,7 +40,9 @@
 </svelte:head>
 
 <div class="page">
-	<Hero />
+	<main class="main">
+		<Hero />
+	</main>
 	<Footer />
 </div>
 
@@ -49,5 +51,12 @@
 		display: flex;
 		flex-direction: column;
 		min-height: 100vh;
+	}
+
+	/* Landmark only: passes the page's column layout through to the hero. */
+	.main {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
 	}
 </style>

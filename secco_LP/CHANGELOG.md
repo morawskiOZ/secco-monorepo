@@ -12,6 +12,16 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 - Tester allowlist (`TEST_EMAILS` secret): a form submitted with a listed email address is mailed back to that address with a `[TEST]` subject instead of the studio inbox, so the production form can be tested end to end
 - One-year cache header for hashed files under `/_app/immutable/`
 
+### Changed
+- Lighthouse 100 work (plan and measurements in `docs/lighthouse-100.md`): stylesheets are inlined, the landing page ships no JavaScript, the hero image is served in three sizes, and the form's welcome image reserves its space so the text beside it no longer jumps
+- Landing page and form pages have a `<main>` landmark
+- Missing files under `/.well-known/` return 404 instead of the app shell
+- Footer keyword line is a darker gray (`#5e5e5f`) to meet WCAG AA contrast
+- Links in the privacy policy are underlined
+
+### Added
+- `llms.txt`
+
 ### Planned
 - Navbar component with mobile hamburger menu
 - Blog section (Treści) — listing and article pages

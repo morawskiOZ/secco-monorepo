@@ -9,7 +9,7 @@
 		<img
 			src="/images/hero-form.webp"
 			alt="Wnętrze zaprojektowane przez Secco Studio"
-			width="500"
+			width="800"
 			height="1202"
 			loading="eager"
 		/>
@@ -38,7 +38,9 @@
 
 	.welcome-image img {
 		max-height: 85vh;
-		width: auto;
+		/* Same size as `width: auto` gives once the 800x1202 image has loaded, but known
+		   before it loads, so the text beside it does not jump. */
+		width: min(800px, calc(85vh * 800 / 1202));
 		display: block;
 		border-radius: var(--radius-lg);
 	}
