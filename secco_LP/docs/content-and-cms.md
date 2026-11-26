@@ -2,8 +2,9 @@
 
 Adds a portfolio (Projekty), articles (Treści) and a design-process page to
 the landing page, with an editor for the studio, on the Cloudflare Workers
-Free plan. Built and running on **stage2**; production is unchanged until the
-switch described under "Going live". Status is at the bottom.
+Free plan. Built and running on **stage2**. Production runs the same code with
+the content sections switched off, until the switch described under "Going
+live". Status is at the bottom.
 
 ## Goal
 
@@ -97,8 +98,8 @@ edit the Markdown files directly.
 
 ### Differences from today
 
-For production these apply from its next deploy, even with the content
-sections off:
+Live on production since 2026-11-26 (`lp-v0.0.3`), with the content sections
+off:
 
 - `/polityka-prywatnosci` ships no JavaScript (it had nothing interactive).
 - `sitemap.xml` is generated at build time; byte-identical while there is no
@@ -109,6 +110,11 @@ sections off:
 - Landing page HTML: same markup and CSS rules; the footer's CSS is emitted as
   its own block and there is one extra empty HTML comment.
 - The deploy workflow no longer downloads a content snapshot from R2.
+- Landing page layout (a separate fix, same deploy): the hero photo's height is
+  capped to the space left by the footer — and by the navigation bar where
+  there is one — so the page fits one screen from about 650 px of window height
+  up; the gray circle sits wholly inside the hero instead of being cut off at
+  the footer.
 
 Only with the content sections on (stage2 now, production after going live):
 the navigation bar on the landing page and privacy policy, the new pages, and
@@ -164,7 +170,8 @@ npm run build:stage2 && npx wrangler dev --env stage2     # local preview
    `SECCO_CONTENT=1` for `production` as well (not `SECCO_DRAFTS`).
 3. Deploy `staging`, compare with stage2, run Lighthouse on the new pages.
 4. Deploy `production`. Add `https://www.seccostudio.com/admin/` as the
-   editor's bookmark.
+   editor's bookmark. (`www.seccostudio.com` is already in the sign-in Worker's
+   `ALLOWED_DOMAINS`, so "Sign In with GitHub" works there without changes.)
 
 **Rollback:** `npx wrangler rollback --env=""` (or `--env stage2`) returns to
 the previous deployment in one step. A bad content change is undone with
@@ -187,14 +194,21 @@ the previous deployment in one step. A bad content change is undone with
       100 for performance, accessibility, best practices and agentic browsing
       on `/`, `/projekty`, a project, `/tresci`, an article, the process page
       and the privacy policy; SEO 66–69 there only because stage2 is noindex.
-- [ ] Not verified: signing in to the CMS and saving an entry (needs the
-      owner's GitHub token), and a form submission on stage2 (needs the mail
-      secrets)
+- [ ] Not verified: a form submission on stage2 (needs the mail secrets;
+      forms are tested on staging and through the production tester allowlist)
 - [x] PR merged 2026-11-26; the merge redeployed stage2 from `main` by itself
 - [x] CMS sign-in Worker (`cms-auth/`) added and tested locally with dummy
       credentials: redirect to GitHub with CSRF cookie, other sites refused,
       callback without cookie refused
-- [ ] Owner: register the GitHub App, set the two secrets, run "Deploy CMS
-      sign-in Worker" (`cms-auth/README.md`); then test the button on stage2
+- [x] GitHub App "Secco Studio CMS" registered, secrets set, sign-in Worker
+      deployed from Actions 2026-11-26 (`secco-cms-auth.secco-studio.workers.dev`).
+      Owner confirmed the whole loop on stage2: Sign In with GitHub, save an
+      entry, commit on `main`, stage2 redeployed and showed the change
+- [x] Production deployed from `main` 2026-11-26, tag `lp-v0.0.3`, content
+      sections off. Verified on www.seccostudio.com: same status codes as the
+      baseline on every route, `sitemap.xml` byte-identical, 308 redirects,
+      API error paths 400/405, no navigation bar or content links, form
+      welcome screen loads without console errors, landing page does not
+      scroll at 1280×720 and 1440×900. Not done: a real form submission
 - [ ] Studio reviews the sample pages and starts replacing them with real content
 - [ ] Going live on production (see above) — not started, owner's decision
