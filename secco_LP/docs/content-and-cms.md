@@ -81,17 +81,17 @@ build:  scripts/prebuild.ts   photos → WebP in 480/800/1200/1920 px + manifest
 
 ### Editor sign-in
 
-Sveltia CMS talks to GitHub directly from the browser. Two ways in, no server
-of ours either way:
+Sveltia CMS talks to GitHub directly from the browser. An editor needs a
+GitHub account with write access to this repository (GitHub's sign-in page
+offers "Continue with Google").
 
-1. **Access token** (works today): "Sign in with token" with a fine-grained
-   GitHub token limited to this repository, *Contents: read and write*.
-2. **"Sign in with GitHub" button** (optional, nicer for a non-technical
-   editor): needs a GitHub OAuth app plus the free
-   [sveltia-cms-auth](https://github.com/sveltia/sveltia-cms-auth) Worker, then
-   `base_url` in `cms/config.yml`.
+1. **"Sign In with GitHub" button**: goes through the `secco-cms-auth` Worker
+   (`cms-auth/`, set as `base_url` in `cms/config.yml`) and a GitHub App
+   installed on this repository only. Tokens can read and write file contents
+   and pull requests here, nothing else. Setup: `cms-auth/README.md`.
+2. **"Sign In Using Access Token"**: a fine-grained GitHub token limited to
+   this repository, *Contents: read and write*. Works without the Worker.
 
-The editor needs a GitHub account with write access to this repository.
 Developers can also use "Work with local repository" (Chromium browsers) or
 edit the Markdown files directly.
 
@@ -132,7 +132,7 @@ the navigation bar on the landing page and privacy policy, the new pages, and
 | 10 ms CPU per request | Content pages are static files; the Worker only passes them through. Form uploads are unchanged (see `hosting-cloudflare-workers.md`) |
 | 20,000 files per deployment | Stage2 today: 103 files (3 photos). Each photo adds up to 4 files → room for ~4,900 photos |
 | 25 MiB per file | Largest generated photo is well under 1 MB |
-| 100 Workers per account | 3 (production, staging, stage2) |
+| 100 Workers per account | 4 (production, staging, stage2, CMS sign-in) |
 | GitHub Actions | Public repository: free |
 
 No paid Cloudflare product is used: no R2, D1, Images or KV.
@@ -190,6 +190,11 @@ the previous deployment in one step. A bad content change is undone with
 - [ ] Not verified: signing in to the CMS and saving an entry (needs the
       owner's GitHub token), and a form submission on stage2 (needs the mail
       secrets)
-- [ ] Merge the PR so that CMS commits on `main` redeploy stage2
+- [x] PR merged 2026-11-26; the merge redeployed stage2 from `main` by itself
+- [x] CMS sign-in Worker (`cms-auth/`) added and tested locally with dummy
+      credentials: redirect to GitHub with CSRF cookie, other sites refused,
+      callback without cookie refused
+- [ ] Owner: register the GitHub App, set the two secrets, run "Deploy CMS
+      sign-in Worker" (`cms-auth/README.md`); then test the button on stage2
 - [ ] Studio reviews the sample pages and starts replacing them with real content
 - [ ] Going live on production (see above) — not started, owner's decision

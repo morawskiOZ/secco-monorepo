@@ -1,0 +1,54 @@
+name: Deploy CMS sign-in Worker
+
+# Deploys cms-auth/ (the "Sign In with GitHub" helper for /admin/) and copies
+# the GitHub App credentials to it. See cms-auth/README.md.
+# Requires CLOUDFLARE_WORKERS_API_TOKEN and CLOUDFLARE_ACCOUNT_ID; sign-in works
+# once CMS_AUTH_CLIENT_ID and CMS_AUTH_CLIENT_SECRET are set as well.
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-cms-auth
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        # wrangler is installed (and version-locked) with the site.
+        working-directory: secco_LP
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: secco_LP/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Deploy
+        run: npx wrangler deploy --config ../cms-auth/wrangler.jsonc
+
+      - name: Copy GitHub App credentials to the Worker
+        env:
+          CLIENT_ID: ${{ secrets.CMS_AUTH_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CMS_AUTH_CLIENT_SECRET }}
+        run: |
+          if [ -z "$CLIENT_ID" ] || [ -z "$CLIENT_SECRET" ]; then
+            echo "::warning::CMS_AUTH_CLIENT_ID / CMS_AUTH_CLIENT_SECRET are not set: the Worker is deployed, but sign-in will report a misconfigured client. See cms-auth/README.md."
+            exit 0
+          fi
+          printf '%s' "$CLIENT_ID" | npx wrangler secret put GITHUB_CLIENT_ID --config ../cms-auth/wrangler.jsonc
+          printf '%s' "$CLIENT_SECRET" | npx wrangler secret put GITHUB_CLIENT_SECRET --config ../cms-auth/wrangler.jsonc

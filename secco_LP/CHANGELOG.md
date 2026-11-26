@@ -9,6 +9,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ### Added
 - Content sections behind a build switch (`SECCO_CONTENT=1`, off on production): Projekty (portfolio with photo viewer), Treści (articles with topic pages), Proces projektowy, and a navigation bar. Content lives as Markdown in `content/`; plan and runbook in `docs/content-and-cms.md`
 - CMS at `/admin/` (Sveltia CMS, git-based) with Polish field labels; saving commits to the repository
+- "Sign In with GitHub" for the CMS through the `secco-cms-auth` Worker (`cms-auth/`, vendored sveltia-cms-auth) and a GitHub App limited to this repository
 - Drafts (`draft: true`): built only where `SECCO_DRAFTS=1` is set
 - Photos in `content/media` are resized at build time to WebP in up to four widths
 - `stage2` environment (`secco-studio-stage2` Worker): content sections, CMS and drafts, hidden from search engines; redeployed on every content commit to `main`

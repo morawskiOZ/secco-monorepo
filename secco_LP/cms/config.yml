@@ -5,6 +5,8 @@ backend:
   name: github
   repo: morawskiOZ/secco-monorepo
   branch: main
+  # "Sign In with GitHub" goes through our sign-in Worker (cms-auth/).
+  base_url: https://secco-cms-auth.secco-studio.workers.dev
   commit_messages:
     create: "content: dodano {{collection}} „{{slug}}”"
     update: "content: zmieniono {{collection}} „{{slug}}”"
