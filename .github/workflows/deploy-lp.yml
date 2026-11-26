@@ -1,7 +1,7 @@
 name: Deploy LP to Cloudflare Workers
 
 # Replaces "Build and Push LP Image" (Docker -> GHCR -> Kubernetes).
-# Requires repository secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID.
+# Requires repository secrets CLOUDFLARE_WORKERS_API_TOKEN and CLOUDFLARE_ACCOUNT_ID.
 # See secco_LP/docs/hosting-cloudflare-workers.md.
 
 on:
@@ -130,7 +130,9 @@ jobs:
 
       - name: Deploy
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          # wrangler only reads CLOUDFLARE_API_TOKEN; the secret keeps the name
+          # of the Workers-scoped token to tell it apart from the zone-only one.
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           TARGET: ${{ inputs.environment }}
         run: |

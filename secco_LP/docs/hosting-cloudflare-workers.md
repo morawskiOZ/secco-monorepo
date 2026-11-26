@@ -113,13 +113,14 @@ account ID. The existing infra token is zone-only and cannot deploy Workers.
 
 ```bash
 cd secco_LP
-export CLOUDFLARE_API_TOKEN=...   CLOUDFLARE_ACCOUNT_ID=...
+# wrangler only reads CLOUDFLARE_API_TOKEN: give it the Workers token
+export CLOUDFLARE_API_TOKEN="$CLOUDFLARE_WORKERS_API_TOKEN"   CLOUDFLARE_ACCOUNT_ID=...
 export KUBECONFIG=<path to infra/kubeconfig>
 ```
 
 1. **CI secrets**
    ```bash
-   gh secret set CLOUDFLARE_API_TOKEN -R morawskiOZ/secco-monorepo
+   gh secret set CLOUDFLARE_WORKERS_API_TOKEN -R morawskiOZ/secco-monorepo
    gh secret set CLOUDFLARE_ACCOUNT_ID -R morawskiOZ/secco-monorepo
    ```
 2. **Deploy staging** (no domain attached): `npm ci && npm run build && npm run deploy:staging`
