@@ -68,7 +68,8 @@
 
 	.footer-keywords p {
 		font-size: var(--font-size-xs);
-		color: var(--color-accent-secondary);
+		/* #7F7F80 on the beige background is 2.8:1; this is the lightest gray that reaches WCAG AA (4.5:1). */
+		color: #5e5e5f;
 		text-align: center;
 	}
 
