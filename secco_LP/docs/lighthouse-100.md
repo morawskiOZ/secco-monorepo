@@ -133,5 +133,12 @@ previous deployment in one step (or re-run the workflow from the previous
       identical to the local build; landing button opens the form, the form
       starts and shows question 1 with no console errors; API error paths
       unchanged (405, 400). Not done: a full form submission (owner).
-- [ ] Owner approval of visible changes; `noindex` decision
-- [ ] Production deploy and verification
+- [x] Owner approved the two visible changes 2026-11-26; `noindex` on the form
+      pages left as it was (still open, see "Open decision")
+- [x] Production deployed from Actions 2026-11-26, tag `lp-v0.0.2`, and
+      verified on www.seccostudio.com: 100 in every category on all four pages,
+      mobile and desktop, except SEO 63/66 on the two form pages (noindex);
+      response headers identical to the baseline; apex and http redirects 308;
+      API error paths 405/400; screenshots identical to staging; landing button
+      opens the form and the form starts with no console errors. Not done: a
+      full form submission (owner, through the tester allowlist).
