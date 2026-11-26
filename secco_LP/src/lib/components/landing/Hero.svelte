@@ -49,10 +49,12 @@
 		opacity: 0.9;
 	}
 
+	/* Sits wholly inside the hero: the hero clips its overflow, so a circle
+	   hanging below the edge would be cut off in a straight line at the footer. */
 	.hero::after {
 		content: '';
 		position: absolute;
-		bottom: -60px;
+		bottom: var(--spacing-md);
 		left: 50%;
 		transform: translateX(-50%);
 		width: 200px;
@@ -126,6 +128,14 @@
 		object-fit: cover;
 	}
 
+	/* Two-column layout: keep hero + footer inside one screen, so the page does
+	   not scroll. 16rem = the hero's vertical padding (2 × 4rem) + the footer (8rem). */
+	@media (min-width: 769px) {
+		.hero-image-wrapper {
+			max-height: min(75vh, calc(100vh - 16rem - var(--landing-nav-height, 0px)));
+		}
+	}
+
 	@media (max-width: 768px) {
 		.hero {
 			padding: var(--spacing-2xl) var(--spacing-lg);
@@ -160,7 +170,6 @@
 		.hero::after {
 			width: 120px;
 			height: 120px;
-			bottom: -30px;
 		}
 	}
 
