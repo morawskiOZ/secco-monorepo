@@ -126,6 +126,12 @@ previous deployment in one step (or re-run the workflow from the previous
 - [x] Fixes implemented; 33 Worker tests, `svelte-check` clean
 - [x] Local build: 100 in every category on `/` and the privacy policy; forms
       100 except SEO (noindex)
-- [ ] Staging deployed and verified
+- [x] Staging deployed from Actions and verified 2026-11-26
+      (`secco-studio-staging.secco-studio.workers.dev`): 100 in every category
+      on all four pages, mobile and desktop, except SEO 63/66 on the two form
+      pages (noindex); response headers identical to the baseline; screenshots
+      identical to the local build; landing button opens the form, the form
+      starts and shows question 1 with no console errors; API error paths
+      unchanged (405, 400). Not done: a full form submission (owner).
 - [ ] Owner approval of visible changes; `noindex` decision
 - [ ] Production deploy and verification
