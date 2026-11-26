@@ -6,6 +6,12 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## [Unreleased]
 
+### Added
+- Cloudflare Workers hosting: `worker/` (TypeScript port of the Go backend — forms, Turnstile, 5/hour rate limit, Gmail SMTP), `wrangler.jsonc`, and the "Deploy LP to Cloudflare Workers" workflow. Plan and runbook in `docs/hosting-cloudflare-workers.md`. The Go backend stays until cutover is complete.
+- Staging Worker for testing forms end to end: mails a tester address (secret) with a `[TEST]` subject prefix instead of the studio inbox
+- Tester allowlist (`TEST_EMAILS` secret): a form submitted with a listed email address is mailed back to that address with a `[TEST]` subject instead of the studio inbox, so the production form can be tested end to end
+- One-year cache header for hashed files under `/_app/immutable/`
+
 ### Planned
 - Navbar component with mobile hamburger menu
 - Blog section (Treści) — listing and article pages
