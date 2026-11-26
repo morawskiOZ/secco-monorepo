@@ -130,7 +130,7 @@ the navigation bar on the landing page and privacy policy, the new pages, and
 |---|---|
 | 100,000 Worker requests/day | 1 per page view (HTML only) + form posts. Photos, scripts and fonts do not count |
 | 10 ms CPU per request | Content pages are static files; the Worker only passes them through. Form uploads are unchanged (see `hosting-cloudflare-workers.md`) |
-| 20,000 files per deployment | Stage2 today: see Status. Each photo adds up to 4 files → room for ~4,900 photos |
+| 20,000 files per deployment | Stage2 today: 103 files (3 photos). Each photo adds up to 4 files → room for ~4,900 photos |
 | 25 MiB per file | Largest generated photo is well under 1 MB |
 | 100 Workers per account | 3 (production, staging, stage2) |
 | GitHub Actions | Public repository: free |
@@ -178,3 +178,18 @@ the previous deployment in one step. A bad content change is undone with
 - [x] Build with content off compared with production HTML (differences listed above)
 - [x] CMS configuration (`cms/config.yml`), Polish labels
 - [x] Sample content marked as drafts; content guide in `content/README.md`
+- [x] Stage2 deployed from Actions (branch `feat/content-stage2`) and verified
+      2026-11-26 on `secco-studio-stage2.secco-studio.workers.dev`: every page
+      and `/admin/` answer 200 with `X-Robots-Tag: noindex, nofollow`; missing
+      files under `/media/` and `/_app/` return 404 (served without the Worker);
+      API error paths unchanged (400, 405); photo viewer and mobile menu work;
+      the CMS loads its configuration without errors. Lighthouse 13 (mobile):
+      100 for performance, accessibility, best practices and agentic browsing
+      on `/`, `/projekty`, a project, `/tresci`, an article, the process page
+      and the privacy policy; SEO 66–69 there only because stage2 is noindex.
+- [ ] Not verified: signing in to the CMS and saving an entry (needs the
+      owner's GitHub token), and a form submission on stage2 (needs the mail
+      secrets)
+- [ ] Merge the PR so that CMS commits on `main` redeploy stage2
+- [ ] Studio reviews the sample pages and starts replacing them with real content
+- [ ] Going live on production (see above) — not started, owner's decision
